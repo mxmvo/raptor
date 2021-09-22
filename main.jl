@@ -18,6 +18,8 @@ stops = CSV.read("gtfs-openov-nl/stops.txt", DataFrame)
 stop_times = CSV.read("gtfs-openov-nl/stop_times.txt", DataFrame)
 shapes = CSV.read("gtfs-openov-nl/shapes.txt", DataFrame);
  
+pif_stop_times = size(stop_times)
+
 #%%
 
 function parse_time(t)
@@ -34,9 +36,18 @@ end
 
 transform!(stop_times, :arrival_time => (t -> parse_time.(t)) => :arrival_s)
 transform!(stop_times, :stop_id => (t -> string.(t) ) => :stop_id)
-
-stops.parent_id = get_parent_station.(stops[:,:stop_id])
 # transform!(stop_times, :stop_id => (t -> get_parent_station.(t)) => :parent_station)
+
+#%%
+
+stop_times = leftjoin(stop_times, trips[:,[:trip_id,:route_id]], on = :trip_id)
+stop_times = leftjoin(stop_times, stops[:,[:stop_id,:parent_station]], on = :stop_id)
+#%%
+
+df_stop_routes = unique(stop_times[:,[:stop_id,:route_id,:stop_sequence]])
+gdf_routes = groupby(df_stop_routes,:route_id)
+
+
 
 #%%
 
@@ -61,7 +72,7 @@ end
 g_stops = groupby(stop_times, :stop_id)
 g_trips = groupby(stop_times, :trip_id)
 
-dep_id = "1331361"
+dep_id = "2324508"
 dep_time = parse_time("12:45:00")
 arr_id = "2324634"
 
@@ -78,6 +89,9 @@ df_stop[df_stop.stop_id .== dep_id,[:arrival_s, :marked]] = [dep_time true]
 
 # %%
 
+make_Q(df_stop, df_stop_routes)
+
+# %%
 for T ∈ 1:10
     new_nodes = stage_2(df_stop, g_stops, g_trips, stops)
     update_df!(df_stop, new_nodes)

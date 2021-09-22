@@ -10,14 +10,22 @@ function select_minrow(t, p, tr)
     return [t[i] p[i] tr[i]]
 end
 
+
+
 function make_Q(df, df_sr)
     Q = Dict()
+
+    # For each marked stop
     for row ∈ eachrow(df[df.marked .== true,:])
         p = row.stop_id
         
+        # Find the routes serving this stop
         for rrow ∈ eachrow(df_sr[df_sr.stop_id .== p,:])
             r = rrow.route_id
             s = rrow.stop_sequence
+
+            # Check if the stop is before an already added stop.
+            # ifso replace it. Otherwise add it.
             if r ∈ keys(Q)
                 _, ss = Q[r]
                 if s < ss
@@ -28,9 +36,40 @@ function make_Q(df, df_sr)
             end
         end
     end
-    Q
-
+    return Q
 end
+
+# function et()
+    
+# end
+
+# function arr()
+
+# end
+
+function traverse_routes(Q, gdf_routes)
+    
+    for (r,(p,s)) in Q
+        t = ⟂ 
+        # p, s = v
+
+        # All stops on route r
+        df_stop_id = gdf_routes[(r,)]
+        # All stop after p on route r
+        filter!(:stop_sequence => (seq -> seq > s), df_stop_id)
+
+        for row ∈ eachrow(df_stop_id)
+            if t !== ⟂ && 
+
+            end
+        end
+
+
+    end
+end
+
+
+
 
 function stage_2(df, g_stops, g_trips, stops; τ⁺ = Inf32)
     
