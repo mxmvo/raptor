@@ -2,7 +2,6 @@
 
 using DataFrames
 using CSV
-using PlotlyJS
 
 #%%
 function select_minrow(t, p, tr)
@@ -39,29 +38,62 @@ function make_Q(df, df_sr)
     return Q
 end
 
-# function et()
-    
-# end
+"""
+earliest trip in route r that one can catch at stop p
+returns trip_id
+"""
+function et(r, p, df_stop,gdf_stop_times_rp)
+    τ_kmin1 = df_stop[df_stop.stop_id .== p,:arrival_s][1] # fix or assert
+    df_trips = gdf_stop_times_rp[(r,p)]
+    df_trips_filtered = filter(:departure_s => (τ_dep -> τ_dep >= τ_kmin1), df_trips)
+    if isempty(df_trips_filtered.departure_s)
+        trip_id = -1 # check if this is ok
+    else
+        et, et_i = findmin(df_trips_filtered.departure_s)
+        trip_id = df_trips_filtered[et_i,:trip_id]
+    end
+    return trip_id
+end
 
-# function arr()
 
-# end
+"""
+arrival and departure time of trip t at station p
+"""
+function arr_dep(t, p, stop_times)
+    arr, dep = eachcol(stop_times[(stop_times.trip_id .== t) .& (stop_times.stop_id .== p),[:arrival_s,:departure_s]])
+    return arr[1], dep[1] # Fix please
+end
 
-function traverse_routes(Q, gdf_routes)
+
+function traverse_routes(Q, gdf_routes, stop_times, df_stop, gdf_stop_times_rp, τ_star)
     
     for (r,(p,s)) in Q
-        t = ⟂ 
-        # p, s = v
+        t = -1  # current trip 
 
         # All stops on route r
         df_stop_id = gdf_routes[(r,)]
-        # All stop after p on route r
-        filter!(:stop_sequence => (seq -> seq > s), df_stop_id)
+        
+        
+        # All stops after p on route r
+        df_stop_id_filtered = filter(:stop_sequence => (seq -> seq > s), df_stop_id)
 
-        for row ∈ eachrow(df_stop_id)
-            if t !== ⟂ && 
+        for row ∈ eachrow(df_stop_id_filtered)
+            pᵢ = row.stop_id 
+            mask = df_stop.stop_id .== pᵢ # mask to select stop pᵢ in df_stop
 
+            τᵢ_star = df_stop[mask, :arrival_s][1] # earliest (found) arrival time at pᵢ 
+            τ_kmin1 = τᵢ_star
+
+            if t !== -1
+                τ_arr, τ_dep = arr_dep(t, pᵢ, stop_times) # arrival time of trip t at stop pᵢ
+                can_be_improved = τ_arr < minimum(τᵢ_star,τ_star)
+                if can_be_improved
+                    df_stop[mask,[:arrival_s,:marked]] .= [τ_arr, true] # "set tau star in alg"
+                end
             end
+            
+            t = et(r, pᵢ, df_stop, gdf_stop_times_rp) # can we catch an earlier trip?
+
         end
 
 

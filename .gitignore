@@ -1,0 +1,5 @@
+gtfs-openov-nl/*
+.DS_Store
+Project.toml
+Delling (2015) Round-Based Public Transit Routing.pdf
+Delling (2019) Fast and Exact Public Transit Routing with Restricted Pareto Sets.pdf
